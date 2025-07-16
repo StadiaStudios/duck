@@ -1,0 +1,211 @@
+/* Custom styles to ensure full-page height and responsive iframe */
+        html, body {
+            height: 100%;
+            margin: 0;
+            font-family: "Inter", sans-serif; /* Use Inter font */
+            overflow: hidden; /* Prevent body scroll, iframe will handle its own scroll */
+        }
+        #app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        #iframe-container {
+            flex-grow: 1; /* Allows iframe to take available height */
+            width: 100%;
+            display: flex; /* Use flex to center iframe if needed, though iframe itself fills */
+            justify-content: center;
+            align-items: center;
+            overflow: hidden; /* Hide any overflow from the iframe */
+            position: relative; /* Needed for absolute positioning of loading screen */
+        }
+        iframe {
+            width: 100%;
+            height: 100%;
+            border: none; /* Remove default iframe border */
+            border-radius: 0.75rem; /* Rounded corners for the iframe */
+        }
+        .message-box {
+            position: fixed;
+            top: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #ef4444; /* Red for error */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s ease-in-out;
+        }
+        .message-box.show {
+            opacity: 1;
+        }
+        /* Loading screen styles */
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent dark overlay */
+            display: flex;
+            flex-direction: column; /* Changed to column to stack spinner and text */
+            justify-content: center;
+            align-items: center;
+            z-index: 999; /* Below message box, above iframe */
+            border-radius: 0.75rem; /* Match iframe border-radius */
+            transition: opacity 0.3s ease-in-out;
+            opacity: 0; /* Initially hidden */
+            pointer-events: none; /* Allow clicks to pass through when hidden */
+        }
+        #loadingScreen.show {
+            opacity: 1;
+            pointer-events: all; /* Block clicks when shown */
+        }
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid #ef4444; /* Changed spinner color to red */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 1rem; /* Space between spinner and text */
+        }
+        .loading-text {
+            color: white;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Settings page specific styles */
+        #settingsView, #changelogView { /* Apply common styles to both settings and changelog */
+            flex-grow: 1;
+            background-color: #1f2937; /* Darker background for settings/changelog */
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            display: none; /* Hidden by default */
+            padding: 2rem;
+            color: #e5e7eb;
+            overflow-y: auto; /* Allow scrolling for content */
+        }
+        #settingsView.show, #changelogView.show {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start; /* Align content to top */
+        }
+        /* Error message overlay styles */
+        #iframeErrorOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(31, 41, 55, 0.9); /* Dark overlay matching settings background */
+            display: none; /* Hidden by default */
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 998; /* Below loading screen, above iframe */
+            border-radius: 0.75rem;
+            color: #ef4444; /* Red text for error */
+            text-align: center;
+            padding: 1rem;
+        }
+        #iframeErrorOverlay.show {
+            display: flex;
+        }
+
+        /* Light mode specific styles */
+        body.light-mode {
+            background-color: #f3f4f6; /* Light gray background for body */
+            color: #1f2937; /* Dark text for general elements */
+        }
+        body.light-mode .bg-gray-800 { /* For navbar, input section, iframe container */
+            background-color: #ffffff; /* White */
+        }
+        body.light-mode .bg-gray-700 { /* For input field, settings/changelog cards */
+            background-color: #f9fafb; /* Lighter gray */
+        }
+        body.light-mode .text-gray-100 { /* General dark text */
+            color: #1f2937;
+        }
+        body.light-mode .text-gray-300 { /* For description text */
+            color: #4b5563;
+        }
+        body.light-mode .text-gray-200 { /* For labels */
+            color: #374151;
+        }
+        body.light-mode .border-gray-600 { /* For input borders */
+            border-color: #d1d5db;
+        }
+        body.light-mode #urlInput.text-red-500 { /* Specific for URL input text */
+            color: #1f2937; /* Dark text for URL input */
+        }
+        body.light-mode .hover\:text-red-500:hover { /* Navbar hover links */
+            color: #dc2626; /* Keep red for hover */
+        }
+        body.light-mode .focus\:ring-red-500:focus { /* Focus rings */
+            --tw-ring-color: #dc2626;
+        }
+        body.light-mode .focus\:border-red-500:focus { /* Focus borders */
+            border-color: #dc2626;
+        }
+        body.light-mode .link41 { /* Specific link color */
+            color: #ef4444; /* Keep red for StadiaStudios link */
+        }
+        body.light-mode .link41:hover {
+            color: #dc2626;
+        }
+        body.light-mode #appTitle,
+        body.light-mode #appTitle a { /* h1 and its link in light mode */
+            color: #000000; /* Black color */
+        }
+        body.light-mode h3 { /* New: h3 in light mode */
+            color: #000000; /* Black color */
+        }
+
+
+        /* Custom Scrollbar Styles */
+        /* For Webkit browsers (Chrome, Safari) */
+        ::-webkit-scrollbar {
+            width: 12px; /* Width of the scrollbar */
+            height: 12px; /* Height of horizontal scrollbar */
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #2d3748; /* Darker background for the track */
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #ef4444; /* Red color for the thumb */
+            border-radius: 10px;
+            border: 3px solid #2d3748; /* Padding around the thumb */
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #dc2626; /* Darker red on hover */
+        }
+
+        /* For Firefox */
+        html {
+            scrollbar-width: thin; /* "auto" or "thin" */
+            scrollbar-color: #ef4444 #2d3748; /* thumb color track color */
+        }
+        /* End Custom Scrollbar Styles */
+
+        .link41 {
+            color: #777;
+        }
+
+        .link41:hover {
+            color: red;
+        }

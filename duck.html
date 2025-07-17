@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StadiaDuck</title>
+    <link rel="icon" href="favicon.png" type="image/png">
+    <!-- Inline styles from styles.css -->
+     <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the message box and loading screen */
+        .message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 1000;
+        }
+
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        #loadingScreen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            font-size: 1.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 50; /* Below iframeErrorOverlay */
+        }
+
+        #loadingScreen.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .spinner {
+            border: 8px solid rgba(255, 255, 255, 0.3);
+            border-top: 8px solid #ef4444; /* Red color */
+            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-weight: bold;
+        }
+
+        #iframe-container {
+            position: relative; /* Needed for absolute positioning of loading and error overlays */
+            width: 100%;
+            height: 70vh; /* Adjust height as needed */
+            display: flex; /* Use flex to center iframe */
+            justify-content: center;
+            align-items: center;
+        }
+
+        #embedFrame {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background-color: #1f2937; /* Dark background for iframe */
+        }
+
+        #iframeErrorOverlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+            z-index: 100; /* Above loading screen */
+        }
+
+        #iframeErrorOverlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Styles for dark mode */
+        body.light-mode {
+            background-color: #f3f4f6; /* Light gray background */
+            color: #1f2937; /* Dark text */
+        }
+
+        body.light-mode .bg-gray-900 {
+            background-color: #f3f4f6;
+        }
+
+        body.light-mode .bg-gray-800 {
+            background-color: #e5e7eb; /* Lighter gray for cards/nav */
+        }
+
+        body.light-mode .text-gray-100 {
+            color: #1f2937;
+        }
+
+        body.light-mode .text-gray-300 {
+            color: #4b5563;
+        }
+
+        body.light-mode .text-white {
+            color: #1f2937;
+        }
+
+        body.light-mode .bg-gray-700 {
+            background-color: #d1d5db; /* Even lighter gray for settings cards */
+        }
+
+        body.light-mode .border-gray-600 {
+            border-color: #9ca3af;
+        }
+
+        body.light-mode .bg-gray-700 {
+            background-color: #e5e7eb;
+        }
+
+        body.light-mode #urlInput,
+        body.light-mode #defaultUrlInput {
+            background-color: #f9fafb; /* Lighter input background */
+            color: #1f2937;
+            border-color: #9ca3af;
+        }
+
+        /* Fullscreen styles for the iframe container */
+        #iframe-container:-webkit-full-screen {
+            width: 100%;
+            height: 100%;
+        }
+        #iframe-container:-moz-full-screen {
+            width: 100%;
+            height: 100%;
+        }
+        #iframe-container:-ms-fullscreen {
+            width: 100%;
+            height: 100%;
+        }
+        #iframe-container:fullscreen {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Mobile menu specific styles */
+        .mobile-menu {
+            position: fixed;
+            top: 0;
+            right: -100%; /* Start off-screen */
+            width: 75%; /* Adjust as needed */
+            height: 100%;
+            background-color: #1f2937; /* Dark background */
+            z-index: 200;
+            transition: right 0.3s ease-in-out;
+            box-shadow: -4px 0 12px rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mobile-menu.open {
+            right: 0; /* Slide in */
+        }
+
+        .mobile-menu a {
+            padding: 0.75rem 0;
+            color: #e5e7eb;
+            font-size: 1.25rem;
+            border-bottom: 1px solid #4b5563;
+            text-decoration: none;
+            transition: color 0.2s ease;
+        }
+
+        .mobile-menu a:last-child {
+            border-bottom: none;
+        }
+
+        .mobile-menu a:hover {
+            color: #ef4444;
+        }
+
+        .close-menu-btn {
+            align-self: flex-end;
+            color: #e5e7eb;
+            font-size: 2rem;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        /* Hamburger icon styling */
+        .hamburger-icon {
+            display: none; /* Hidden by default on larger screens */
+            cursor: pointer;
+            flex-direction: column;
+            justify-content: space-around;
+            width: 30px;
+            height: 25px;
+            background: transparent;
+            border: none;
+            padding: 0;
+            z-index: 201; /* Above mobile menu */
+        }
+
+        .hamburger-icon span {
+            display: block;
+            width: 100%;
+            height: 3px;
+            background-color: #ef4444; /* Red color for hamburger */
+            border-radius: 3px;
+            transition: all 0.3s ease-in-out;
+        }
+
+        /* Responsive adjustments */
+        .navbar-links {
+            display: none; /* Hide regular navigation links by default */
+        }
+
+        @media (min-width: 769px) { /* Show regular navigation links on larger screens */
+            .navbar-links {
+                display: flex;
+            }
+            .hamburger-icon {
+                display: none; /* Hide hamburger on larger screens */
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hamburger-icon {
+                display: flex; /* Show hamburger on small screens */
+            }
+            /* Hide the normal navbar links on small screens */
+            .navbar-links {
+                display: none;
+            }
+        }
+
+        /* Hide the normal navbar links when mobile menu is open */
+        body.menu-open .navbar-links {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100">
+    <div id="app-container" class="p-4">
+        <!-- Navbar Section -->
+        <nav class="bg-gray-800 p-4 rounded-xl shadow-lg mb-4 flex justify-between items-center">
+            <h1  class="text-2xl font-bold text-white flex items-center" id="appTitle">
+                <span class="mr-2 text-3xl"><a href="duck.html">🦆</span>StadiaDuck</a>
+            </h1>
+            <div class="flex space-x-4 navbar-links"> <!-- Added navbar-links class -->
+                <a href="#" id="homeLink" class="text-gray-300 hover:text-red-500 transition duration-200">Home</a>
+                <a href="#" id="settingsLink" class="text-gray-300 hover:text-red-500 transition duration-200">Settings</a>
+                <a href="#" id="changelogLink" class="text-gray-300 hover:text-red-500 transition duration-200">Changelog</a>
+                <span></span>
+            </div>
+            <!-- Hamburger Icon for Mobile -->
+            <button class="hamburger-icon" id="hamburgerIcon">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </nav>
+
+        <!-- Mobile Menu -->
+        <div id="mobileMenu" class="mobile-menu">
+            <button class="close-menu-btn" id="closeMenuBtn">&times;</button>
+            <a href="#" id="mobileHomeLink" class="text-gray-300 hover:text-red-500 transition duration-200">Home</a>
+            <a href="#" id="mobileSettingsLink" class="text-gray-300 hover:text-red-500 transition duration-200">Settings</a>
+            <a href="#" id="mobileChangelogLink" class="text-gray-300 hover:text-red-500 transition duration-200">Changelog</a>
+        </div>
+
+        <!-- Main Browser View -->
+        <div id="mainBrowserView" class="flex flex-col flex-grow">
+            <!-- Input and Button Section -->
+            <div class="flex flex-col sm:flex-row items-center justify-center p-4 bg-gray-800 rounded-xl shadow-lg mb-4 space-y-3 sm:space-y-0 sm:space-x-4">
+                <input
+                    type="url"
+                    id="urlInput"
+                    placeholder="Enter URL to run (e.g., https://www.example.com)"
+                    class="flex-grow w-full sm:w-auto p-3 border border-gray-600 bg-gray-700 text-red-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 transition duration-200"
+                />
+                <button
+                    id="embedButton"
+                    class="w-full sm:w-auto px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+                >
+                    RUN
+                </button>
+                <!-- Fullscreen Button -->
+                <button
+                    id="fullscreenButton"
+                    class="w-full sm:w-auto px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+                >
+                    EXPAND
+                </button>
+            </div>
+
+            <!-- Iframe Container -->
+            <div id="iframe-container" class="bg-gray-800 rounded-xl shadow-lg overflow-hidden">
+                <iframe id="embedFrame" src="" title="Embedded Content"></iframe>
+                <!-- Loading Screen -->
+                <div id="loadingScreen">
+                    <div class="spinner"></div>
+                    <span class="loading-text">StadiaDuck</span>
+                </div>
+                <!-- Iframe Error Overlay -->
+                <div id="iframeErrorOverlay">
+                    <p class="text-2xl font-bold mb-2">Failed to Load Website</p>
+                    <p class="text-lg">This might be due to security policies (e.g., X-Frame-Options) or an invalid URL.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings View -->
+        <div id="settingsView" class="hidden flex-col items-center justify-center p-4">
+            <h2 class="text-3xl font-bold mb-6 text-white">Settings</h2>
+            <p class="text-lg mb-4 text-gray-300">Customize your StadiaDuck experience.</p>
+
+            <div class="w-full max-w-md bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-3 text-white">General Settings</h3>
+                <div class="flex items-center justify-between mb-3">
+                    <label for="darkModeToggle" class="text-gray-200">Dark Mode</label>
+                    <input type="checkbox" id="darkModeToggle" class="form-checkbox h-5 w-5 text-red-600 rounded-md focus:ring-red-500">
+                </div>
+                <div class="flex items-center justify-between">
+                    <label for="defaultUrlInput" class="text-gray-200">Username</label>
+                    <input type="text" id="defaultUrlInput" placeholder="PickleRick" class="ml-4 p-2 border border-gray-600 bg-gray-800 text-gray-100 rounded-md flex-grow">
+                </div>
+            </div>
+
+            <div class="w-full max-w-md bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-3 text-white">Privacy Settings</h3>
+                <p class="text-gray-300">No privacy settings available yet.</p>
+            </div>
+
+            <div class="w-full max-w-md bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-3 text-white">StadiaStudios</h3>
+                <p class="text-gray-300">This app was developed by StadiaStudios, You can view our website or more tools like this below</p>
+                <a class="link41" href="https://stadiastudios.github.io/Stadia/">View More From StadiaStudios</a>
+            </div>
+
+            <button
+                id="backToBrowserButton"
+                class="mt-6 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+            >
+                Back to Duck
+            </button>
+        </div>
+
+        <!-- Changelog View -->
+        <div id="changelogView" class="hidden flex-col items-center justify-center p-4">
+            <h2 class="text-3xl font-bold mb-6 text-white">Changelog</h2>
+<div class="w-full max-w-2xl bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-3 text-white">Version 1.1.1 - July 17, 2025</h3>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Mobile Device Fixes</li>
+                    <li>Mobile Navbar Fixes</li>
+                </ul>
+            </div>
+
+            <div class="w-full max-w-2xl bg-gray-700 p-6 rounded-lg shadow-md mb-6">
+                <h3 class="text-xl font-semibold mb-3 text-white">Version 1.0.0 - July 16, 2025</h3>
+                <ul class="list-disc list-inside text-gray-300 space-y-2">
+                    <li>Dark/Light Mode Setting</li>
+                    <li>Working Browser</li>
+                    <li>Favicon</li>
+                    <li>Release Day</li>
+                </ul>
+            </div>
+
+            <button
+                id="backToBrowserButtonFromChangelog"
+                class="mt-6 px-6 py-3 bg-red-600 text-white font-semibold rounded-lg shadow-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-200"
+            >
+                Back to Duck
+            </button>
+        </div>
+
+        <!-- Message Box for alerts -->
+        <div id="messageBox" class="message-box"></div>
+    </div>
+
+    <script>
+        // Global variable to store the last attempted URL
+        let lastAttemptedUrl = '';
+
+        // Get references to DOM elements
+        const urlInput = document.getElementById('urlInput');
+        const embedButton = document.getElementById('embedButton');
+        const fullscreenButton = document.getElementById('fullscreenButton'); // New: Fullscreen button
+        const embedFrame = document.getElementById('embedFrame');
+        const messageBox = document.getElementById('messageBox');
+        const loadingScreen = document.getElementById('loadingScreen');
+        const iframeErrorOverlay = document.getElementById('iframeErrorOverlay');
+        const iframeContainer = document.getElementById('iframe-container'); // New: Iframe container
+
+        const mainBrowserView = document.getElementById('mainBrowserView');
+        const settingsView = document.getElementById('settingsView');
+        const changelogView = document.getElementById('changelogView'); // New: Changelog View
+
+        const settingsLink = document.getElementById('settingsLink');
+        const homeLink = document.getElementById('homeLink');
+        const changelogLink = document.getElementById('changelogLink'); // New: Changelog Link
+
+        const backToBrowserButton = document.getElementById('backToBrowserButton');
+        const backToBrowserButtonFromChangelog = document.getElementById('backToBrowserButtonFromChangelog'); // New: Changelog Back Button
+
+        const darkModeToggle = document.getElementById('darkModeToggle'); // Dark Mode Toggle
+        const body = document.body; // Reference to the body element
+        const appTitle = document.getElementById('appTitle'); // Reference to the h1 element
+
+        // Mobile Menu Elements
+        const hamburgerIcon = document.getElementById('hamburgerIcon');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMenuBtn = document.getElementById('closeMenuBtn');
+        const mobileHomeLink = document.getElementById('mobileHomeLink');
+        const mobileSettingsLink = document.getElementById('mobileSettingsLink');
+        const mobileChangelogLink = document.getElementById('mobileChangelogLink');
+
+
+        /**
+         * Displays a message in a temporary box.
+         * @param {string} message - The message to display.
+         * @param {string} type - The type of message (e.g., 'error', 'success').
+         */
+        function showMessage(message, type = 'error') {
+            messageBox.textContent = message;
+            messageBox.className = 'message-box show'; // Reset classes and show
+            if (type === 'error') {
+                messageBox.style.backgroundColor = '#ef4444'; // Red
+            } else if (type === 'success') {
+                messageBox.style.backgroundColor = '#10b981'; // Green
+            }
+
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, 3000); // Hide after 3 seconds
+        }
+
+        /**
+         * Shows the loading screen.
+         */
+        function showLoading() {
+            loadingScreen.classList.add('show');
+            iframeErrorOverlay.classList.remove('show'); // Hide error overlay when loading
+        }
+
+        /**
+         * Hides the loading screen.
+         */
+        function hideLoading() {
+            loadingScreen.classList.remove('show');
+        }
+
+        /**
+         * Shows the iframe error overlay.
+         */
+        function showIframeError() {
+            iframeErrorOverlay.classList.add('show');
+        }
+
+        /**
+         * Hides the iframe error overlay.
+         */
+        function hideIframeError() {
+            iframeErrorOverlay.classList.remove('show');
+        }
+
+        /**
+         * Sets the iframe's source to the provided URL.
+         * Adds 'https://' if the protocol is missing.
+         * Displays an error if the URL is empty.
+         */
+        function embedUrl() {
+            let url = urlInput.value.trim(); // Get and trim the URL from the input
+
+            if (!url) {
+                showMessage('Please enter a URL to embed.', 'error');
+                return;
+            }
+
+            // Add https:// if no protocol is specified
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                url = 'https://' + url;
+            }
+            lastAttemptedUrl = url; // Store the URL
+            showLoading(); // Show loading screen before setting src
+            hideIframeError(); // Hide any previous error message
+            embedFrame.src = url;
+            showMessage('Attempting to load: ' + url, 'success');
+        }
+
+        /**
+         * Toggles dark mode on/off and saves preference to localStorage.
+         * @param {boolean} enableDarkMode - True for dark mode, false for light mode.
+         */
+        function toggleDarkMode(enableDarkMode) {
+            if (enableDarkMode) {
+                body.classList.remove('light-mode');
+            } else {
+                body.classList.add('light-mode');
+            }
+            localStorage.setItem('darkMode', enableDarkMode); // Save preference
+        }
+
+
+        /**
+         * Shows the main browser view and hides other views.
+         */
+        function showBrowserView() {
+            mainBrowserView.classList.remove('hidden');
+            settingsView.classList.remove('show');
+            settingsView.style.display = 'none'; // Ensure it's fully hidden
+            changelogView.classList.add('hidden'); // New: Hide changelog view
+            changelogView.style.display = 'none'; // New: Ensure it's fully hidden
+            mobileMenu.classList.remove('open'); // Close mobile menu
+            body.classList.remove('menu-open'); // Remove class from body
+        }
+
+        /**
+         * Shows the settings view and hides other views.
+         */
+        function showSettingsView() {
+            mainBrowserView.classList.add('hidden');
+            settingsView.classList.add('show');
+            settingsView.style.display = 'flex'; // Make it visible and use flex for layout
+            changelogView.classList.add('hidden'); // New: Hide changelog view
+            changelogView.style.display = 'none'; // New: Ensure it's fully hidden
+            mobileMenu.classList.remove('open'); // Close mobile menu
+            body.classList.remove('menu-open'); // Remove class from body
+        }
+
+        /**
+         * Shows the changelog view and hides other views.
+         */
+        function showChangelogView() {
+            mainBrowserView.classList.add('hidden');
+            settingsView.classList.remove('show');
+            settingsView.style.display = 'none'; // Ensure settings view is fully hidden
+            changelogView.classList.remove('hidden');
+            changelogView.classList.add('show');
+            changelogView.style.display = 'flex'; // Make it visible and use flex for layout
+            mobileMenu.classList.remove('open'); // Close mobile menu
+            body.classList.remove('menu-open'); // Remove class from body
+        }
+
+        /**
+         * Requests fullscreen mode for the iframe container.
+         */
+        function requestFullscreen() {
+            if (iframeContainer.requestFullscreen) {
+                iframeContainer.requestFullscreen();
+            } else if (iframeContainer.mozRequestFullScreen) { /* Firefox */
+                iframeContainer.mozRequestFullScreen();
+            } else if (iframeContainer.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+                iframeContainer.webkitRequestFullscreen();
+            } else if (iframeContainer.msRequestFullscreen) { /* IE/Edge */
+                iframeContainer.msRequestFullscreen();
+            } else {
+                showMessage('Fullscreen is not supported by your browser.', 'error');
+            }
+        }
+
+        // Event listener for the embed button click
+        embedButton.addEventListener('click', embedUrl);
+
+        // Event listener for the fullscreen button click
+        fullscreenButton.addEventListener('click', requestFullscreen);
+
+        // Optional: Allow pressing Enter key in the input field to trigger embed
+        urlInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                embedUrl();
+            }
+        });
+
+        // Event listener for when the iframe finishes loading
+        embedFrame.onload = function() {
+            hideLoading(); // Hide loading screen once iframe content is loaded
+            // Give a very small moment for the browser to potentially redirect or load content,
+            // especially for about:blank cases that resolve to something else.
+            setTimeout(() => {
+                // Check if the iframe's current source is still 'about:blank'
+                // and if the last attempted URL was not 'about:blank' itself.
+                // This is a heuristic for X-Frame-Options blocking.
+                if (embedFrame.src === 'about:blank' && lastAttemptedUrl !== 'about:blank' && lastAttemptedUrl !== '') {
+                    showIframeError();
+                    showMessage('Failed to load website due to security policies (X-Frame-Options) or an invalid URL. Try another URL.', 'error');
+                } else {
+                    // If it's not about:blank, or if it was intentionally about:blank, assume success
+                    hideIframeError();
+                }
+            }, 100); // A slightly longer delay to be safer
+        };
+
+        // The onerror event is less reliable for cross-origin issues, but kept as a fallback
+        embedFrame.onerror = function() {
+            hideLoading();
+            showIframeError(); // Show the dedicated iframe error overlay
+            showMessage('Failed to connect to website. This might be a network error or an invalid URL.', 'error');
+        };
+
+        // Event listeners for navigation
+        settingsLink.addEventListener('click', (e) => {
+            e.preventDefault(); // Prevent default link behavior
+            showSettingsView();
+        });
+
+        homeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showBrowserView();
+        });
+
+        changelogLink.addEventListener('click', (e) => { // New: Changelog Link Listener
+            e.preventDefault();
+            showChangelogView();
+        });
+
+        backToBrowserButton.addEventListener('click', (e) => {
+            e.preventDefault();
+            showBrowserView();
+        });
+
+        backToBrowserButtonFromChangelog.addEventListener('click', (e) => { // New: Changelog Back Button Listener
+            e.preventDefault();
+            showBrowserView();
+        });
+
+        // Dark Mode Toggle Logic
+        darkModeToggle.addEventListener('change', (e) => {
+            toggleDarkMode(e.target.checked);
+        });
+
+        // Load dark mode preference from localStorage on page load
+        // Default to dark mode if no preference is found
+        const savedDarkMode = localStorage.getItem('darkMode');
+        const isDarkModeDefault = savedDarkMode === null ? true : savedDarkMode === 'true'; // Default to true if null
+
+        darkModeToggle.checked = isDarkModeDefault;
+        toggleDarkMode(isDarkModeDefault);
+
+
+        // Initial view setup
+        showBrowserView(); // Ensure browser view is shown on load
+
+        // Mobile menu event listeners
+        hamburgerIcon.addEventListener('click', () => {
+            mobileMenu.classList.add('open');
+            body.classList.add('menu-open'); // Add class to body when menu opens
+        });
+
+        closeMenuBtn.addEventListener('click', () => {
+            mobileMenu.classList.remove('open');
+            body.classList.remove('menu-open'); // Remove class from body when menu closes
+        });
+
+        mobileHomeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showBrowserView();
+        });
+
+        mobileSettingsLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showSettingsView();
+        });
+
+        mobileChangelogLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            showChangelogView();
+        });
+    </script>
+</body>
+</html>
